@@ -1,14 +1,19 @@
-require("dotenv").config();
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const app = express()
 
-const express = require("express");
-const app = express();
+const errorMiddleware = require('./middleware/error.middleware')
+const mainRoute = require('./route/index.route')
 
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
 
-const loanRoute = require("./modules/loan/loan.route");
-app.use("/api/loans", loanRoute);
+app.use('/api', mainRoute)  
 
-const PORT = process.env.PORT || 3001;
+app.use(errorMiddleware)
+
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
