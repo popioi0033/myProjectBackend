@@ -1,5 +1,5 @@
 // modules/officer/officer.controller.js
-const { createOfficer } = require('../model/model.layer/officer.model.layer')
+const { createOfficer , getOfficers} = require('../service/officer.service')
 
 const create = async (req, res, next) => {
   try {
@@ -10,6 +10,16 @@ const create = async (req, res, next) => {
   }
 }
 
+const getAllOfficers = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query
+    const result = await getOfficers({ page, limit, search });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err)
+  }
+}
 module.exports = {
-  create
+  create,
+  getAllOfficers
 }
