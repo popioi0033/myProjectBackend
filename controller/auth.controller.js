@@ -3,11 +3,8 @@ const jwt = require('jsonwebtoken')
 
 const loginController = async (req,res,next)=>{
     try{
-
         const { username, password } = req.body
-
         const user = await login(username, password)
-
         const token = jwt.sign(
             {
                 userId: user.id,
@@ -17,13 +14,11 @@ const loginController = async (req,res,next)=>{
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         )
-
         res.json({
             message: "login success",
             token,
             user
         })
-
     }catch(err){
         next(err)
     }
