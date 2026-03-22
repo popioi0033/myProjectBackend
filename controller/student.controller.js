@@ -1,4 +1,4 @@
-const { addStudent , getStd, addRequest,getLoanRequest,updateStatus,getExportData} = require('../service/student.service');
+const { addStudent , getStd, addRequest,getLoanRequest,updateStatus,getExportData,updateStd,getExportStudentData} = require('../service/student.service');
 const ExcelJS = require('exceljs')
 
 const createStudent = async (req, res, next) => {
@@ -102,7 +102,57 @@ const exportController = async (req, res, next) => {
     }
 }
 
+const updateStdController = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const data = req.body
 
+        const result = await updateStd(id, data)
+        res.status(200).json({ result })
+    } catch (err) {
+        next(err)
+    }
+}
+
+const exportStudentController = async (req, res, next) => {
+    try {
+        const { search = '' } = req.query
+        const data = await getExportStudentData({ search })
+
+        const workbook = new ExcelJS.Workbook()
+        const sheet = workbook.addWorksheet('Students')
+
+        sheet.columns = [
+            { header: 'Student ID',  key: 'student_code',  width: 15 },
+            { header: 'First Name',  key: 'first_name',    width: 15 },
+            { header: 'Last Name',   key: 'last_name',     width: 15 },
+            { header: 'Email',       key: 'email',         width: 25 },
+            { header: 'Phone',       key: 'phone',         width: 15 },
+            { header: 'Faculty',     key: 'faculty_name',  width: 25 },
+            { header: 'Branch',      key: 'branch',        width: 20 },
+            { header: 'Year',        key: 'year',          width: 8  },
+            { header: 'GPAX',        key: 'gpax',          width: 8  },
+        ]
+
+        sheet.getRow(1).font = { bold: true }
+        sheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFF8C00' }
+        }
+
+        data.forEach(row => sheet.addRow(row))
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        res.setHeader('Content-Disposition', 'attachment; filename=students.xlsx')
+
+        await workbook.xlsx.write(res)
+        res.end()
+
+    } catch (err) {
+        next(err)
+    }
+}
 
 module.exports = {
     createStudent,
@@ -110,5 +160,7 @@ module.exports = {
     addRequestController,
     getAllReq,
     updateStatusController,
-    exportController
+    exportController,
+    updateStdController,
+    exportStudentController 
 }
