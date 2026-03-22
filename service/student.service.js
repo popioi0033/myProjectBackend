@@ -49,7 +49,10 @@ const getStd = async ({ page = 1, limit = 10, search = '' } = {}) => {
                     s.last_name, 
                     s.email, 
                     s.phone,
-                    f.name AS faculty_name
+                    f.name AS faculty_name,
+                    s.gpax,
+                    s.branch,
+                    s.year
                 FROM students s
                 JOIN faculties f ON s.faculty_id = f.id
                 WHERE s.first_name ILIKE $1 
@@ -295,11 +298,84 @@ const getExportData = async ({ search = '', status = '' } = {}) => {
     }
 }
 
+const updateStd = async (studentId, data) => {
+    try {
+        const { firstName, lastName, email, phone, gpax, branch, year, facultyCode } = data
+
+        // ถ้ามีการเปลี่ยน faculty ต้องดึง faculty_id ก่อน
+        let facultyId = null
+        if (facultyCode) {
+            const faculty = await pool.query(
+                `SELECT id FROM faculties WHERE code = $1`,
+                [facultyCode]
+            )
+            if (faculty.rows.length === 0) throw new Error('Faculty not found')
+            facultyId = faculty.rows[0].id
+        }
+
+        const result = await pool.query(
+            `UPDATE students SET
+                first_name = COALESCE($1, first_name),
+                last_name = COALESCE($2, last_name),
+                email = COALESCE($3, email),
+                phone = COALESCE($4, phone),
+                gpax = COALESCE($5, gpax),
+                branch = COALESCE($6, branch),
+                year = COALESCE($7, year),
+                faculty_id = COALESCE($8, faculty_id)
+            WHERE id = $9
+            RETURNING *`,
+            [firstName, lastName, email, phone, gpax, branch, year, facultyId, studentId]
+        )
+
+        if (result.rows.length === 0) throw new Error('Student not found')
+
+        return result.rows[0]
+
+    } catch (err) {
+        throw err
+    }
+}
+
+const getExportStudentData = async ({ search = '' } = {}) => {
+    try {
+        const keyword = `%${search}%`
+
+        const result = await pool.query(
+            `SELECT 
+                s.student_code,
+                s.first_name,
+                s.last_name,
+                s.email,
+                s.phone,
+                f.name AS faculty_name,
+                s.branch,
+                s.year,
+                s.gpax
+            FROM students s
+            JOIN faculties f ON s.faculty_id = f.id
+            WHERE s.first_name ILIKE $1 
+               OR s.last_name ILIKE $1 
+               OR s.student_code ILIKE $1
+               OR s.email ILIKE $1
+            ORDER BY s.id DESC`,
+            [keyword]
+        )
+
+        return result.rows
+
+    } catch (err) {
+        throw err
+    }
+}
+
 module.exports = {
     addStudent,
     getStd,
     addRequest,
     getLoanRequest,
     updateStatus,
-    getExportData
+    getExportData,
+    updateStd,
+    getExportStudentData 
 }
