@@ -92,6 +92,20 @@ const addRequest = async (data) => {
     try {
         const { studentId, academicYear, semester, officerId } = data
 
+        const period = await pool.query(
+            `SELECT id FROM loan_period 
+             WHERE academic_year = $1 
+             AND semester = $2
+             AND NOW() BETWEEN start_date AND end_date`,
+            [academicYear, semester]
+        )
+
+        if (period.rows.length === 0) {
+            throw new Error('ไม่มีรอบรับเอกสารที่เปิดอยู่สำหรับเทอมนี้')
+        }
+
+        const loanPeriodId = period.rows[0].id
+
         const status = await pool.query(
             `SELECT id FROM request_status WHERE code = $1`,
             ['PENDING']
@@ -104,13 +118,11 @@ const addRequest = async (data) => {
         const statusId = status.rows[0].id
 
         const result = await pool.query(
-            `
-            INSERT INTO loan_request
-            (student_id, academic_year, semester, officer_id, status_id)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *
-            `,
-            [studentId, academicYear, semester, officerId, statusId]
+            `INSERT INTO loan_request
+             (student_id, academic_year, semester, officer_id, status_id, loan_period_id)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [studentId, academicYear, semester, officerId, statusId, loanPeriodId]
         )
 
         return result.rows[0]
@@ -119,7 +131,6 @@ const addRequest = async (data) => {
         throw err
     }
 }
-
 const getLoanRequest = async ({ page = 1, limit = 10, search = '', status = '' } = {}) => {
     try {
         const pageNum = parseInt(page)

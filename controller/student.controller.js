@@ -6,9 +6,9 @@ const createStudent = async (req, res, next) => {
 
         const data = req.body
 
-        const student = await addStudent(data)
+        const result = await addStudent(data)
 
-        res.status(201).json({student})
+        res.status(201).json({result})
 
     } catch (error) {
         next(error)
@@ -61,7 +61,7 @@ const updateStatusController = async (req, res, next) => {
 const exportController = async (req, res, next) => {
     try {
         const { search = '', status = '' } = req.query
-        const data = await getExportData({ search, status })
+        const result = await getExportData({ search, status })
 
         const workbook = new ExcelJS.Workbook()
         const sheet = workbook.addWorksheet('Loan Requests')
@@ -89,7 +89,7 @@ const exportController = async (req, res, next) => {
             fgColor: { argb: 'FFFF8C00' }
         }
 
-        data.forEach(row => sheet.addRow(row))
+        result.forEach(row => sheet.addRow(row))
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         res.setHeader('Content-Disposition', 'attachment; filename=loan_requests.xlsx')
