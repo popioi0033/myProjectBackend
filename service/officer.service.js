@@ -82,4 +82,22 @@ const getOfficers = async ({ page = 1, limit = 10, search = '' } = {}) => {
   }
 }
 
-module.exports = { createOfficer, getOfficers }
+const exportOfficer = async({ search = '' } = {}) => {
+  try {
+    const keyword = `%${search}%`
+
+    const result = await pool.query(
+      `SELECT id, officer_code, name, email, institute, job_position, phone, role
+       FROM officers
+       WHERE name ILIKE $1 OR email ILIKE $1 OR officer_code ILIKE $1
+       ORDER BY id DESC`,
+      [keyword]
+    )
+
+    return result.rows
+  } catch (err) {
+    throw err
+  }
+}
+
+module.exports = { createOfficer, getOfficers , exportOfficer}
