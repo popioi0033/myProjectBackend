@@ -17,6 +17,21 @@ const createLoanPeriod = async (data, officerId) => {
     }
 }
 
+const deleteLoanPeriod = async (id) => {
+    try {
+        const result = await pool.query(
+            `DELETE FROM loan_period WHERE id = $1 RETURNING *`,
+            [id]
+        )
+
+        if (result.rows.length === 0) throw new Error('Loan period not found')
+
+        return result.rows[0]
+    } catch (err) {
+        throw err
+    }
+}
+
 const getLoanPeriods = async () => {
     try {
         const result = await pool.query(
@@ -71,9 +86,39 @@ const updateLoanPeriod = async (id, data) => {
     }
 }
 
+const getNotifications = async () => {
+    try {
+        const result = await pool.query(
+            `SELECT 
+                lr.id AS request_id,
+                s.first_name,
+                s.last_name,
+                s.student_code,
+                lp.name AS period_name,
+                lp.end_date,
+                rs.name_th AS status,
+                EXTRACT(DAY FROM lp.end_date - NOW()) AS days_remaining
+            FROM loan_request lr
+            JOIN students s ON lr.student_id = s.id
+            JOIN loan_period lp ON lr.loan_period_id = lp.id
+            JOIN request_status rs ON lr.status_id = rs.id
+            WHERE rs.code NOT IN ('APPROVED', 'REJECTED')
+            AND lp.end_date > NOW()
+            AND lp.end_date <= NOW() + INTERVAL '3 days'
+            ORDER BY lp.end_date ASC`
+        )
+
+        return result.rows
+    } catch (err) {
+        throw err
+    }
+}
+
 module.exports = {
     createLoanPeriod,
+    deleteLoanPeriod,
     getLoanPeriods,
     getActiveLoanPeriod,
-    updateLoanPeriod
+    updateLoanPeriod,
+    getNotifications
 }
